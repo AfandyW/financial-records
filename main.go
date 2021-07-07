@@ -37,7 +37,7 @@ func main() {
 	route.Get("/", HomeController)
 	route.Get("/transactions", GetAllTransactionsController)
 	route.Post("/transactions", AddTransactionController)
-	// route.Get("/transactions/{id}", GetAllTransactionsController)
+	route.Get("/transactions/{id}", GetTransactionController)
 	route.Put("/transactions/{id}", EditTransactionController)
 	route.Delete("/transactions/{id}", DeleteTransactionController)
 
@@ -110,9 +110,9 @@ func AddTransactionController(w http.ResponseWriter, r *http.Request) {
 	w.Write(result)
 }
 
-func EditTransactionController(w http.ResponseWriter, r *http.Request) {
+func GetTransactionController(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
-	var index int = 0
+	var index int = -1
 
 	for i, x := range Transactions {
 		if id == x.Id {
@@ -121,7 +121,37 @@ func EditTransactionController(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if index == 0 {
+	if index == -1 {
+		http.Error(w, "Id Not Found", http.StatusNotFound)
+	}
+
+	res := Result{
+		Code: http.StatusOK,
+		Data: Transactions[index],
+	}
+	result, err := json.Marshal(res)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	w.Write(result)
+}
+
+func EditTransactionController(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	var index int = -1
+
+	for i, x := range Transactions {
+		if id == x.Id {
+			index = i
+			break
+		}
+	}
+
+	if index == -1 {
 		http.Error(w, "Id Not Found", http.StatusNotFound)
 	}
 
@@ -167,7 +197,7 @@ func EditTransactionController(w http.ResponseWriter, r *http.Request) {
 
 func DeleteTransactionController(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
-	var index int = 0
+	var index int = -1
 
 	for i, x := range Transactions {
 		if id == x.Id {
@@ -176,7 +206,7 @@ func DeleteTransactionController(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if index == 0 {
+	if index == -1 {
 		http.Error(w, "Id Not Found", http.StatusNotFound)
 	}
 	Transactions = append(Transactions[:index], Transactions[index+1:]...)
