@@ -1,12 +1,22 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+)
+
+const (
+	host     = "localhost"
+	port     = 5432
+	user     = "postgres"
+	password = "123456"
+	dbname   = "financial"
 )
 
 type Transaction struct {
@@ -31,7 +41,21 @@ type Result struct {
 	Message string      `json:"message"`
 }
 
+func CheckError(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
 func main() {
+	// database
+	psqlconn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
+
+	db, err := sql.Open("postgres", psqlconn)
+	CheckError(err)
+
+	defer db.Close()
+
 	route := chi.NewRouter()
 
 	route.Get("/", HomeController)
