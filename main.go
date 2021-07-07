@@ -36,8 +36,10 @@ func main() {
 
 	route.Get("/", HomeController)
 	route.Get("/transactions", GetAllTransactionsController)
-	route.Post("/transactions", AddTransactionsController)
-	// route.Post("/transactions/{id}", EditTransactionsController)
+	route.Post("/transactions", AddTransactionController)
+	// route.Get("/transactions/{id}", GetAllTransactionsController)
+	route.Put("/transactions/{id}", EditTransactionController)
+	route.Delete("/transactions/{id}", DeleteTransactionController)
 
 	http.ListenAndServe(":3000", route)
 
@@ -62,9 +64,8 @@ func HomeController(w http.ResponseWriter, r *http.Request) {
 
 func GetAllTransactionsController(w http.ResponseWriter, r *http.Request) {
 	res := Result{
-		Code:    http.StatusOK,
-		Data:    Transactions,
-		Message: nil,
+		Code: http.StatusOK,
+		Data: Transactions,
 	}
 	result, err := json.Marshal(res)
 
@@ -77,7 +78,7 @@ func GetAllTransactionsController(w http.ResponseWriter, r *http.Request) {
 	w.Write(result)
 }
 
-func AddTransactionsController(w http.ResponseWriter, r *http.Request) {
+func AddTransactionController(w http.ResponseWriter, r *http.Request) {
 	var newTransaction Transaction
 
 	err := json.NewDecoder(r.Body).Decode(&newTransaction)
@@ -97,6 +98,91 @@ func AddTransactionsController(w http.ResponseWriter, r *http.Request) {
 		Code:    http.StatusCreated,
 		Data:    Transactions,
 		Message: "New Record Transaction has been Created",
+	}
+	result, err := json.Marshal(res)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	w.Write(result)
+}
+
+func EditTransactionController(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	var index int = 0
+
+	for i, x := range Transactions {
+		if id == x.Id {
+			index = i
+			break
+		}
+	}
+
+	if index == 0 {
+		http.Error(w, "Id Not Found", http.StatusNotFound)
+	}
+
+	var updateTransaction Transaction
+
+	err := json.NewDecoder(r.Body).Decode(&updateTransaction)
+
+	if err != nil {
+		http.Error(w, "Error read body request", http.StatusInternalServerError)
+	}
+
+	timeNow := time.Now()
+
+	Transactions[index] = Transaction{
+		Id:              Transactions[index].Id,
+		Title:           updateTransaction.Title,
+		Description:     updateTransaction.Description,
+		TypeTransaction: updateTransaction.TypeTransaction,
+		Amount:          updateTransaction.Amount,
+		Currency:        updateTransaction.Currency,
+		Category:        updateTransaction.Category,
+		SubCategory:     updateTransaction.SubCategory,
+		UpdateAt:        timeNow.Local(),
+		CreateAt:        Transactions[index].CreateAt,
+		TransactionAt:   Transactions[index].TransactionAt,
+	}
+
+	res := Result{
+		Code:    http.StatusOK,
+		Data:    Transactions[index],
+		Message: "New Record Transaction has been Updated",
+	}
+	result, err := json.Marshal(res)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	w.Write(result)
+}
+
+func DeleteTransactionController(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	var index int = 0
+
+	for i, x := range Transactions {
+		if id == x.Id {
+			index = i
+			break
+		}
+	}
+
+	if index == 0 {
+		http.Error(w, "Id Not Found", http.StatusNotFound)
+	}
+	Transactions = append(Transactions[:index], Transactions[index+1:]...)
+	res := Result{
+		Code:    http.StatusOK,
+		Message: "Record Transaction has been Delete",
 	}
 	result, err := json.Marshal(res)
 
