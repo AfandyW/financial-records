@@ -25,23 +25,56 @@ type Transaction struct {
 
 var Transactions []Transaction
 
+type Result struct {
+	Code    int         `json:"code"`
+	Data    interface{} `json:"data"`
+	Message string      `json:"message"`
+}
+
 func main() {
 	route := chi.NewRouter()
 
 	route.Get("/", HomeController)
 	route.Get("/transactions", GetAllTransactionsController)
 	route.Post("/transactions", AddTransactionsController)
+	// route.Post("/transactions/{id}", EditTransactionsController)
 
 	http.ListenAndServe(":3000", route)
 
 }
 
 func HomeController(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Hay, Welcome"))
+	res := Result{
+		Code:    http.StatusOK,
+		Data:    nil,
+		Message: "Ini Halaman Home",
+	}
+	result, err := json.Marshal(res)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(result)
 }
 
 func GetAllTransactionsController(w http.ResponseWriter, r *http.Request) {
-	json.NewEncoder(w).Encode(Transactions)
+	res := Result{
+		Code:    http.StatusOK,
+		Data:    Transactions,
+		Message: nil,
+	}
+	result, err := json.Marshal(res)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(result)
 }
 
 func AddTransactionsController(w http.ResponseWriter, r *http.Request) {
@@ -60,5 +93,18 @@ func AddTransactionsController(w http.ResponseWriter, r *http.Request) {
 
 	Transactions = append(Transactions, newTransaction)
 
-	json.NewEncoder(w).Encode(Transactions)
+	res := Result{
+		Code:    http.StatusCreated,
+		Data:    Transactions,
+		Message: "New Record Transaction has been Created",
+	}
+	result, err := json.Marshal(res)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	w.Write(result)
 }
