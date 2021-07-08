@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 
@@ -115,7 +114,7 @@ func GetAllTransactionsController(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var transaction Transaction
 
-		err = rows.Scan(&transaction.Id, &transaction.Title, &transaction.Description, &transaction.TypeTransaction, &transaction.Currency, &transaction.Amount, &transaction.Category, &transaction.SubCategory, &transaction.TransactionAt)
+		err = rows.Scan(&transaction.Id, &transaction.Title, &transaction.Description, &transaction.TypeTransaction, &transaction.Amount, &transaction.Currency, &transaction.Category, &transaction.SubCategory, &transaction.TransactionAt, &transaction.CreateAt, &transaction.UpdateAt)
 
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -156,35 +155,34 @@ func AddTransactionController(w http.ResponseWriter, r *http.Request) {
 	newTransaction.CreateAt = newTransaction.TransactionAt
 	newTransaction.UpdateAt = newTransaction.TransactionAt
 
-	sqlStatement := `insert into transaction (id,title,description,type_transaction,amount,currency,category,sub_category,transaction_at,create_at,update_at) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`
-	row, err := db.Query(sqlStatement, newTransaction.Id, newTransaction.Title, newTransaction.Description, newTransaction.TypeTransaction, newTransaction.Amount, newTransaction.Currency, newTransaction.SubCategory, newTransaction.TransactionAt, newTransaction.CreateAt, newTransaction.UpdateAt)
+	var id, title string
 
-	if err != nil {
-		log.Fatalf("Unable to execute the query. %v", err)
+	sqlStatement := `insert into transaction (id,title,description,type_transaction,amount,currency,category,sub_category,transaction_at,create_at,update_at) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id, title`
+	row := db.QueryRow(sqlStatement, newTransaction.Id, newTransaction.Title, newTransaction.Description, newTransaction.TypeTransaction, newTransaction.Amount, newTransaction.Currency, newTransaction.Category, newTransaction.SubCategory, newTransaction.TransactionAt, newTransaction.CreateAt, newTransaction.UpdateAt).Scan(&id, &title)
+
+	if row != nil {
+		http.Error(w, row.Error(), http.StatusInternalServerError)
 	}
-
-	fmt.Println(row)
-
-	// if err != nil {
-	// 	http.Error(w, "SQL Database Error", http.StatusInternalServerError)
-	// }
 
 	// Transactions = append(Transactions, newTransaction)
 
-	// res := Result{
-	// 	Code:    http.StatusCreated,
-	// 	Data:    newTransaction,
-	// 	Message: "New Record Transaction has been Created",
-	// }
-	// result, err := json.Marshal(res)
+	res := Result{
+		Code: http.StatusCreated,
+		Data: map[string]string{
+			"id":    id,
+			"title": title,
+		},
+		Message: "New Record Transaction has been Created",
+	}
+	result, err := json.Marshal(res)
 
-	// if err != nil {
-	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
-	// }
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 
-	// w.Header().Set("Content-Type", "application/json")
-	// w.WriteHeader(http.StatusCreated)
-	// w.Write(result)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	w.Write(result)
 }
 
 // func GetTransactionController(w http.ResponseWriter, r *http.Request) {
