@@ -70,8 +70,8 @@ func main() {
 	route.Get("/", HomeController)
 	route.Get("/transactions", GetAllTransactionsController)
 	route.Post("/transactions", AddTransactionController)
-	// route.Get("/transactions/{id}", GetTransactionController)
-	// route.Put("/transactions/{id}", EditTransactionController)
+	route.Get("/transactions/{id}", GetTransactionController)
+	route.Put("/transactions/{id}", EditTransactionController)
 	// route.Delete("/transactions/{id}", DeleteTransactionController)
 
 	http.ListenAndServe(":3000", route)
@@ -185,90 +185,91 @@ func AddTransactionController(w http.ResponseWriter, r *http.Request) {
 	w.Write(result)
 }
 
-// func GetTransactionController(w http.ResponseWriter, r *http.Request) {
-// 	id := chi.URLParam(r, "id")
-// 	var index int = -1
+func GetTransactionController(w http.ResponseWriter, r *http.Request) {
+	db := createConnection()
+	defer db.Close()
 
-// 	for i, x := range Transactions {
-// 		if id == x.Id {
-// 			index = i
-// 			break
-// 		}
-// 	}
+	id := chi.URLParam(r, "id")
 
-// 	if index == -1 {
-// 		http.Error(w, "Id Not Found", http.StatusNotFound)
-// 	}
+	sqlStatement := `SELECT * FROM transaction where id=$1`
+	row, err := db.Query(sqlStatement, id)
 
-// 	res := Result{
-// 		Code: http.StatusOK,
-// 		Data: Transactions[index],
-// 	}
-// 	result, err := json.Marshal(res)
+	if err != nil {
 
-// 	if err != nil {
-// 		http.Error(w, err.Error(), http.StatusInternalServerError)
-// 	}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 
-// 	w.Header().Set("Content-Type", "application/json")
-// 	w.WriteHeader(http.StatusCreated)
-// 	w.Write(result)
-// }
+	var transaction Transaction
 
-// func EditTransactionController(w http.ResponseWriter, r *http.Request) {
-// 	id := chi.URLParam(r, "id")
-// 	var index int = -1
+	err = row.Scan(&transaction.Id, &transaction.Title, &transaction.Description, &transaction.TypeTransaction, &transaction.Amount, &transaction.Currency, &transaction.Category, &transaction.SubCategory, &transaction.TransactionAt, &transaction.CreateAt, &transaction.UpdateAt)
 
-// 	for i, x := range Transactions {
-// 		if id == x.Id {
-// 			index = i
-// 			break
-// 		}
-// 	}
+	if err != nil {
 
-// 	if index == -1 {
-// 		http.Error(w, "Id Not Found", http.StatusNotFound)
-// 	}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 
-// 	var updateTransaction Transaction
+	res := Result{
+		Code: http.StatusOK,
+		Data: transaction,
+	}
+	result, err := json.Marshal(res)
 
-// 	err := json.NewDecoder(r.Body).Decode(&updateTransaction)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 
-// 	if err != nil {
-// 		http.Error(w, "Error read body request", http.StatusInternalServerError)
-// 	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(result)
+}
 
-// 	timeNow := time.Now()
+func EditTransactionController(w http.ResponseWriter, r *http.Request) {
+	db := createConnection()
+	defer db.Close()
 
-// 	Transactions[index] = Transaction{
-// 		Id:              Transactions[index].Id,
-// 		Title:           updateTransaction.Title,
-// 		Description:     updateTransaction.Description,
-// 		TypeTransaction: updateTransaction.TypeTransaction,
-// 		Amount:          updateTransaction.Amount,
-// 		Currency:        updateTransaction.Currency,
-// 		Category:        updateTransaction.Category,
-// 		SubCategory:     updateTransaction.SubCategory,
-// 		UpdateAt:        timeNow.Local(),
-// 		CreateAt:        Transactions[index].CreateAt,
-// 		TransactionAt:   Transactions[index].TransactionAt,
-// 	}
+	id := chi.URLParam(r, "id")
 
-// 	res := Result{
-// 		Code:    http.StatusOK,
-// 		Data:    Transactions[index],
-// 		Message: "New Record Transaction has been Updated",
-// 	}
-// 	result, err := json.Marshal(res)
+	sqlStatement := `SELECT * FROM transaction where id=$1`
+	_, err := db.Query(sqlStatement, id)
 
-// 	if err != nil {
-// 		http.Error(w, err.Error(), http.StatusInternalServerError)
-// 	}
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 
-// 	w.Header().Set("Content-Type", "application/json")
-// 	w.WriteHeader(http.StatusCreated)
-// 	w.Write(result)
-// }
+	var updateTransaction Transaction
+
+	err = json.NewDecoder(r.Body).Decode(&updateTransaction)
+
+	if err != nil {
+		http.Error(w, "Error read body request", http.StatusInternalServerError)
+	}
+	timeNow := time.Now()
+	updateTransaction.UpdateAt = timeNow.Local()
+
+	sqlStatement = `update transaction set title = $1,description = $2,type_transaction = $3,amount = $4,currency = $5,category = $6,sub_category = $7,update_at = $8 where id = $9`
+	_, err = db.Query(sqlStatement, updateTransaction.Title, updateTransaction.Description, updateTransaction.TypeTransaction, updateTransaction.Amount, updateTransaction.Currency, updateTransaction.Category, updateTransaction.SubCategory, updateTransaction.UpdateAt, id)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	res := Result{
+		Code: http.StatusOK,
+		Data: map[string]string{
+			"id":    id,
+			"title": updateTransaction.Title,
+		},
+	}
+	result, err := json.Marshal(res)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(result)
+}
 
 // func DeleteTransactionController(w http.ResponseWriter, r *http.Request) {
 // 	id := chi.URLParam(r, "id")
