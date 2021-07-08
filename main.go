@@ -72,7 +72,7 @@ func main() {
 	route.Post("/transactions", AddTransactionController)
 	route.Get("/transactions/{id}", GetTransactionController)
 	route.Put("/transactions/{id}", EditTransactionController)
-	// route.Delete("/transactions/{id}", DeleteTransactionController)
+	route.Delete("/transactions/{id}", DeleteTransactionController)
 
 	http.ListenAndServe(":3000", route)
 
@@ -192,16 +192,11 @@ func GetTransactionController(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 
 	sqlStatement := `SELECT * FROM transaction where id=$1`
-	row, err := db.Query(sqlStatement, id)
-
-	if err != nil {
-
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	row := db.QueryRow(sqlStatement, id)
 
 	var transaction Transaction
 
-	err = row.Scan(&transaction.Id, &transaction.Title, &transaction.Description, &transaction.TypeTransaction, &transaction.Amount, &transaction.Currency, &transaction.Category, &transaction.SubCategory, &transaction.TransactionAt, &transaction.CreateAt, &transaction.UpdateAt)
+	err := row.Scan(&transaction.Id, &transaction.Title, &transaction.Description, &transaction.TypeTransaction, &transaction.Amount, &transaction.Currency, &transaction.Category, &transaction.SubCategory, &transaction.TransactionAt, &transaction.CreateAt, &transaction.UpdateAt)
 
 	if err != nil {
 
@@ -271,32 +266,37 @@ func EditTransactionController(w http.ResponseWriter, r *http.Request) {
 	w.Write(result)
 }
 
-// func DeleteTransactionController(w http.ResponseWriter, r *http.Request) {
-// 	id := chi.URLParam(r, "id")
-// 	var index int = -1
+func DeleteTransactionController(w http.ResponseWriter, r *http.Request) {
+	db := createConnection()
+	defer db.Close()
 
-// 	for i, x := range Transactions {
-// 		if id == x.Id {
-// 			index = i
-// 			break
-// 		}
-// 	}
+	id := chi.URLParam(r, "id")
 
-// 	if index == -1 {
-// 		http.Error(w, "Id Not Found", http.StatusNotFound)
-// 	}
-// 	Transactions = append(Transactions[:index], Transactions[index+1:]...)
-// 	res := Result{
-// 		Code:    http.StatusOK,
-// 		Message: "Record Transaction has been Delete",
-// 	}
-// 	result, err := json.Marshal(res)
+	sqlStatement := `SELECT * FROM transaction where id=$1`
+	_, err := db.Query(sqlStatement, id)
 
-// 	if err != nil {
-// 		http.Error(w, err.Error(), http.StatusInternalServerError)
-// 	}
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 
-// 	w.Header().Set("Content-Type", "application/json")
-// 	w.WriteHeader(http.StatusCreated)
-// 	w.Write(result)
-// }
+	sqlStatement = `delete from transaction where id = $1`
+	_, err = db.Query(sqlStatement, id)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	res := Result{
+		Code:    http.StatusOK,
+		Message: "Transaction has been Delete",
+	}
+	result, err := json.Marshal(res)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(result)
+}
