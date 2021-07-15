@@ -243,7 +243,7 @@ func (server *Server) FakeTransactionController(w http.ResponseWriter, r *http.R
 		transaction.Title = faker.Word()
 		transaction.Description = faker.Sentence()
 		transaction.TypeTransaction = faker.Word()
-		transaction.Amount = rand.Intn(100)
+		transaction.Amount = rand.Intn(100) * 1000
 		transaction.Currency = faker.Currency()
 		transaction.Category = faker.Word()
 		transaction.SubCategory = faker.Word()
@@ -251,12 +251,11 @@ func (server *Server) FakeTransactionController(w http.ResponseWriter, r *http.R
 		transaction.CreateAt = transaction.TransactionAt
 		transaction.UpdateAt = transaction.TransactionAt
 
-		ttt, err := transaction.CreateTransaction(server.DB)
+		_, err := transaction.CreateTransaction(server.DB)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		fmt.Println(ttt)
 	}
 
 	res := Response{
