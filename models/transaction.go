@@ -55,7 +55,6 @@ func (t *Transaction) GetAllTransactions(db *sql.DB, limit int, page int) (*[]Tr
 
 	var err error
 	var rows *sql.Rows
-	fmt.Println(page)
 
 	if limit != 0 {
 		if page != 0 {
