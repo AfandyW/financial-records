@@ -3,10 +3,12 @@ package controllers
 import (
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"time"
 
 	"github.com/AfandyW/financial-records/models"
+	"github.com/bxcodec/faker/v3"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )
@@ -227,5 +229,48 @@ func (server *Server) DeleteTransactionController(w http.ResponseWriter, r *http
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
+	w.Write(response)
+}
+
+func (server *Server) FakeTransactionController(w http.ResponseWriter, r *http.Request) {
+	transaction := models.Transaction{}
+
+	rand.Seed(5)
+
+	for i := 0; i < 5; i++ {
+		timeNow := time.Now()
+		transaction.Id = uuid.New().String()
+		transaction.Title = faker.Word()
+		transaction.Description = faker.Sentence()
+		transaction.TypeTransaction = faker.Word()
+		transaction.Amount = rand.Intn(100)
+		transaction.Currency = faker.Currency()
+		transaction.Category = faker.Word()
+		transaction.SubCategory = faker.Word()
+		transaction.TransactionAt = timeNow.Local()
+		transaction.CreateAt = transaction.TransactionAt
+		transaction.UpdateAt = transaction.TransactionAt
+
+		ttt, err := transaction.CreateTransaction(server.DB)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		fmt.Println(ttt)
+	}
+
+	res := Response{
+		Code:    http.StatusCreated,
+		Message: "Fake Transaction success",
+	}
+	response, err := json.Marshal(res)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
 	w.Write(response)
 }
