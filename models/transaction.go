@@ -28,7 +28,7 @@ func (t *Transaction) CreateTransaction(db *sql.DB) (*Transaction, error) {
 		transaction_at,create_at,update_at) 
 		values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`
 
-	row := db.QueryRow(
+	_, err := db.Query(
 		sqlStatement,
 		t.Id,
 		t.Title,
@@ -42,21 +42,8 @@ func (t *Transaction) CreateTransaction(db *sql.DB) (*Transaction, error) {
 		t.CreateAt,
 		t.UpdateAt)
 
-	err := row.Scan(
-		&t.Id,
-		&t.Title,
-		&t.Description,
-		&t.TypeTransaction,
-		&t.Amount,
-		&t.Currency,
-		&t.Category,
-		&t.SubCategory,
-		&t.TransactionAt,
-		&t.CreateAt,
-		&t.UpdateAt)
-
 	if err != nil {
-		return &Transaction{}, nil
+		return &Transaction{}, err
 	}
 
 	return t, nil
@@ -94,7 +81,7 @@ func (t *Transaction) GetAllTransactions(db *sql.DB) (*[]Transaction, error) {
 		transactions = append(transactions, transaction)
 	}
 
-	return &transactions, err
+	return &transactions, nil
 }
 
 func (t *Transaction) GetTransaction(db *sql.DB, transactionId string) (*Transaction, error) {
@@ -120,7 +107,7 @@ func (t *Transaction) GetTransaction(db *sql.DB, transactionId string) (*Transac
 		return &Transaction{}, err
 	}
 
-	return &transaction, err
+	return &transaction, nil
 }
 
 func (t *Transaction) UpdateTransaction(db *sql.DB) (*Transaction, error) {
@@ -152,7 +139,7 @@ func (t *Transaction) UpdateTransaction(db *sql.DB) (*Transaction, error) {
 		return &Transaction{}, err
 	}
 
-	return t, err
+	return t, nil
 }
 
 func (t *Transaction) DeleteTransaction(db *sql.DB) (*Transaction, error) {
@@ -164,5 +151,5 @@ func (t *Transaction) DeleteTransaction(db *sql.DB) (*Transaction, error) {
 		return &Transaction{}, err
 	}
 
-	return t, err
+	return t, nil
 }
