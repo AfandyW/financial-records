@@ -49,12 +49,27 @@ func (t *Transaction) CreateTransaction(db *sql.DB) (*Transaction, error) {
 	return t, nil
 }
 
-func (t *Transaction) GetAllTransactions(db *sql.DB) (*[]Transaction, error) {
+func (t *Transaction) GetAllTransactions(db *sql.DB, limit int, page int) (*[]Transaction, error) {
 
 	transactions := []Transaction{}
 
-	sqlStatement := `SELECT * FROM transaction`
-	rows, err := db.Query(sqlStatement)
+	var err error
+	var rows *sql.Rows
+	fmt.Println(page)
+
+	if limit != 0 {
+		if page != 0 {
+			offset := (page - 1) * limit
+			sqlStatement := `SELECT * FROM transaction LIMIT $1 OFFSET $2`
+			rows, err = db.Query(sqlStatement, limit, offset)
+		} else {
+			sqlStatement := `SELECT * FROM transaction LIMIT $1`
+			rows, err = db.Query(sqlStatement, limit)
+		}
+	} else {
+		sqlStatement := `SELECT * FROM transaction`
+		rows, err = db.Query(sqlStatement)
+	}
 
 	if err != nil {
 		return &[]Transaction{}, err

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/AfandyW/financial-records/models"
@@ -34,7 +35,10 @@ func (server *Server) HomeController(w http.ResponseWriter, r *http.Request) {
 func (server *Server) GetAllTransactionsController(w http.ResponseWriter, r *http.Request) {
 	var transaction models.Transaction
 
-	transactions, err := transaction.GetAllTransactions(server.DB)
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+
+	transactions, err := transaction.GetAllTransactions(server.DB, limit, page)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
