@@ -22,7 +22,7 @@ type Transaction struct {
 
 func (t *Transaction) CreateTransaction(db *sql.DB) (*Transaction, error) {
 
-	sqlStatement := `INSERT INTO transaction (
+	sqlStatement := `INSERT INTO transactions (
 		id,title,description,type_transaction,
 		amount,currency,category,sub_category,
 		transaction_at,create_at,update_at) 
@@ -59,14 +59,14 @@ func (t *Transaction) GetAllTransactions(db *sql.DB, limit int, page int) (*[]Tr
 	if limit != 0 {
 		if page != 0 {
 			offset := (page - 1) * limit
-			sqlStatement := `SELECT * FROM transaction LIMIT $1 OFFSET $2`
+			sqlStatement := `SELECT * FROM transactions LIMIT $1 OFFSET $2`
 			rows, err = db.Query(sqlStatement, limit, offset)
 		} else {
-			sqlStatement := `SELECT * FROM transaction LIMIT $1`
+			sqlStatement := `SELECT * FROM transactions LIMIT $1`
 			rows, err = db.Query(sqlStatement, limit)
 		}
 	} else {
-		sqlStatement := `SELECT * FROM transaction`
+		sqlStatement := `SELECT * FROM transactions`
 		rows, err = db.Query(sqlStatement)
 	}
 
@@ -101,7 +101,7 @@ func (t *Transaction) GetAllTransactions(db *sql.DB, limit int, page int) (*[]Tr
 func (t *Transaction) GetTransaction(db *sql.DB, transactionId string) (*Transaction, error) {
 
 	transaction := Transaction{}
-	sqlStatement := `SELECT * FROM transaction where id=$1`
+	sqlStatement := `SELECT * FROM transactions where id=$1`
 	row := db.QueryRow(sqlStatement, transactionId)
 
 	err := row.Scan(
@@ -126,7 +126,7 @@ func (t *Transaction) GetTransaction(db *sql.DB, transactionId string) (*Transac
 
 func (t *Transaction) UpdateTransaction(db *sql.DB) (*Transaction, error) {
 
-	sqlStatement := `UPDATE transaction SET 
+	sqlStatement := `UPDATE transactions SET 
 	title = $1,
 	description = $2,
 	type_transaction = $3,
@@ -158,7 +158,7 @@ func (t *Transaction) UpdateTransaction(db *sql.DB) (*Transaction, error) {
 
 func (t *Transaction) DeleteTransaction(db *sql.DB) (*Transaction, error) {
 
-	sqlStatement := `delete from transaction where id = $1`
+	sqlStatement := `delete from transactions where id = $1`
 	_, err := db.Query(sqlStatement, t.Id)
 
 	if err != nil {
