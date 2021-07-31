@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/AfandyW/financial-records/models"
+	"github.com/AfandyW/financial-records/repository"
 	"github.com/bxcodec/faker/v3"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -33,12 +34,12 @@ func (server *Server) HomeController(w http.ResponseWriter, r *http.Request) {
 }
 
 func (server *Server) GetAllTransactionsController(w http.ResponseWriter, r *http.Request) {
-	var transaction models.Transaction
+	transactionRepository := repository.NewTransactionRepository(server.DB)
 
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
 	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
 
-	transactions, err := transaction.GetAllTransactions(server.DB, limit, page)
+	transactions, err := transactionRepository.GetAllTransactions(limit, page)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -64,6 +65,7 @@ func (server *Server) GetAllTransactionsController(w http.ResponseWriter, r *htt
 
 func (server *Server) AddTransactionController(w http.ResponseWriter, r *http.Request) {
 	transaction := models.Transaction{}
+	transactionRepository := repository.NewTransactionRepository(server.DB)
 
 	err := json.NewDecoder(r.Body).Decode(&transaction)
 
@@ -78,7 +80,7 @@ func (server *Server) AddTransactionController(w http.ResponseWriter, r *http.Re
 	transaction.CreateAt = transaction.TransactionAt
 	transaction.UpdateAt = transaction.TransactionAt
 
-	transactionCreated, err := transaction.CreateTransaction(server.DB)
+	transactionCreated, err := transactionRepository.CreateTransaction(&transaction)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -106,7 +108,7 @@ func (server *Server) AddTransactionController(w http.ResponseWriter, r *http.Re
 }
 
 func (server *Server) GetTransactionController(w http.ResponseWriter, r *http.Request) {
-
+	transactionRepository := repository.NewTransactionRepository(server.DB)
 	transactionId := chi.URLParam(r, "id")
 
 	if transactionId == "" {
@@ -114,9 +116,7 @@ func (server *Server) GetTransactionController(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	transaction := models.Transaction{}
-
-	transactionReceive, err := transaction.GetTransaction(server.DB, transactionId)
+	transactionReceive, err := transactionRepository.GetTransaction(transactionId)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
@@ -141,6 +141,7 @@ func (server *Server) GetTransactionController(w http.ResponseWriter, r *http.Re
 }
 
 func (server *Server) EditTransactionController(w http.ResponseWriter, r *http.Request) {
+	transactionRepository := repository.NewTransactionRepository(server.DB)
 	transactionId := chi.URLParam(r, "id")
 
 	if transactionId == "" {
@@ -148,9 +149,7 @@ func (server *Server) EditTransactionController(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	transaction := models.Transaction{}
-
-	transactionReceive, err := transaction.GetTransaction(server.DB, transactionId)
+	transaction, err := transactionRepository.GetTransaction(transactionId)
 
 	if err != nil {
 		fmt.Println(err)
@@ -167,10 +166,10 @@ func (server *Server) EditTransactionController(w http.ResponseWriter, r *http.R
 	}
 
 	timeNow := time.Now()
-	transactionUpdate.Id = transactionReceive.Id
+	transactionUpdate.Id = transaction.Id
 	transactionUpdate.UpdateAt = timeNow.Local()
 
-	transactionUpdated, err := transactionUpdate.UpdateTransaction(server.DB)
+	transactionUpdated, err := transactionRepository.UpdateTransaction(transactionId, &transactionUpdate)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -195,6 +194,7 @@ func (server *Server) EditTransactionController(w http.ResponseWriter, r *http.R
 }
 
 func (server *Server) DeleteTransactionController(w http.ResponseWriter, r *http.Request) {
+	transactionRepository := repository.NewTransactionRepository(server.DB)
 	transactionId := chi.URLParam(r, "id")
 
 	if transactionId == "" {
@@ -202,16 +202,14 @@ func (server *Server) DeleteTransactionController(w http.ResponseWriter, r *http
 		return
 	}
 
-	transaction := models.Transaction{}
-
-	transactionReceive, err := transaction.GetTransaction(server.DB, transactionId)
+	transaction, err := transactionRepository.GetTransaction(transactionId)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 
-	_, err = transactionReceive.DeleteTransaction(server.DB)
+	_, err = transactionRepository.DeleteTransaction(transaction.Id)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -238,6 +236,7 @@ func (server *Server) DeleteTransactionController(w http.ResponseWriter, r *http
 
 func (server *Server) FakeTransactionController(w http.ResponseWriter, r *http.Request) {
 	transaction := models.Transaction{}
+	transactionRepository := repository.NewTransactionRepository(server.DB)
 
 	rand.Seed(5)
 
@@ -255,7 +254,7 @@ func (server *Server) FakeTransactionController(w http.ResponseWriter, r *http.R
 		transaction.CreateAt = transaction.TransactionAt
 		transaction.UpdateAt = transaction.TransactionAt
 
-		_, err := transaction.CreateTransaction(server.DB)
+		_, err := transactionRepository.CreateTransaction(&transaction)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
