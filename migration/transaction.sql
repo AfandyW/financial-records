@@ -10,5 +10,5 @@ CREATE TABLE transactions (
     sub_category VARCHAR(100),
     transaction_at TIMESTAMP NOT NULL,
     create_at TIMESTAMP NOT NULL,
-    update_at TIMESTAMP NOT NULL,
+    update_at TIMESTAMP NOT NULL
 );
