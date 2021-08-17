@@ -21,9 +21,7 @@ func (repository *transactionRepositoryImpl) CreateTransaction(transaction *mode
 	db := repository.DB
 
 	sqlStatement := `INSERT INTO transactions (
-		id,title,description,type_transaction,
-		amount,currency,category,sub_category,
-		transaction_at,create_at,update_at) 
+		`+ orderTransaction +`) 
 		values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`
 
 	_, err := db.Query(
