@@ -21,10 +21,10 @@ func (repository *transactionRepositoryImpl) CreateTransaction(transaction *mode
 	db := repository.DB
 
 	sqlStatement := `INSERT INTO transactions (
-		`+ orderTransaction +`) 
+		` + orderTransaction + `) 
 		values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`
 
-	_, err := db.Query(
+	row, err := db.Query(
 		sqlStatement,
 		transaction.Id,
 		transaction.Title,
@@ -37,6 +37,8 @@ func (repository *transactionRepositoryImpl) CreateTransaction(transaction *mode
 		transaction.TransactionAt,
 		transaction.CreateAt,
 		transaction.UpdateAt)
+
+	defer row.Close()
 
 	if err != nil {
 		return &models.Transaction{}, err
@@ -55,20 +57,22 @@ func (repository *transactionRepositoryImpl) GetAllTransactions(limit int, page 
 	if limit != 0 {
 		if page != 0 {
 			offset := (page - 1) * limit
-			sqlStatement := `SELECT `+ orderTransaction +` FROM transactions LIMIT $1 OFFSET $2`
+			sqlStatement := `SELECT ` + orderTransaction + ` FROM transactions LIMIT $1 OFFSET $2`
 			rows, err = db.Query(sqlStatement, limit, offset)
 		} else {
-			sqlStatement := `SELECT `+ orderTransaction +` FROM transactions LIMIT $1`
+			sqlStatement := `SELECT ` + orderTransaction + ` FROM transactions LIMIT $1`
 			rows, err = db.Query(sqlStatement, limit)
 		}
 	} else {
-		sqlStatement := `SELECT `+ orderTransaction +` FROM transactions`
+		sqlStatement := `SELECT ` + orderTransaction + ` FROM transactions`
 		rows, err = db.Query(sqlStatement)
 	}
 
 	if err != nil {
 		return []models.Transaction{}, err
 	}
+
+	defer rows.Close()
 
 	for rows.Next() {
 		var transaction models.Transaction
@@ -97,7 +101,7 @@ func (repository *transactionRepositoryImpl) GetAllTransactions(limit int, page 
 func (repository *transactionRepositoryImpl) GetTransaction(transactionId string) (*models.Transaction, error) {
 	db := repository.DB
 	transaction := models.Transaction{}
-	sqlStatement := `SELECT `+ orderTransaction +`
+	sqlStatement := `SELECT ` + orderTransaction + `
 	FROM transactions where id=$1`
 	row := db.QueryRow(sqlStatement, transactionId)
 
@@ -133,7 +137,7 @@ func (repository *transactionRepositoryImpl) UpdateTransaction(transactionId str
 	sub_category = $7,
 	update_at = $8 WHERE id = $9`
 
-	_, err := db.Query(
+	row, err := db.Query(
 		sqlStatement,
 		transaction.Title,
 		transaction.Description,
@@ -144,6 +148,8 @@ func (repository *transactionRepositoryImpl) UpdateTransaction(transactionId str
 		transaction.SubCategory,
 		transaction.UpdateAt,
 		transaction.Id)
+
+	defer row.Close()
 
 	if err != nil {
 		fmt.Println(err)
@@ -156,8 +162,9 @@ func (repository *transactionRepositoryImpl) UpdateTransaction(transactionId str
 func (repository *transactionRepositoryImpl) DeleteTransaction(transactionId string) (bool, error) {
 	db := repository.DB
 	sqlStatement := `delete from transactions where id = $1`
-	_, err := db.Query(sqlStatement, transactionId)
+	row, err := db.Query(sqlStatement, transactionId)
 
+	row.Close()
 	if err != nil {
 		return false, err
 	}
